@@ -1,0 +1,427 @@
+/* ═══════════════════════════════════════════════════════════════
+   JinKamp Seat Randomizer  —  Light Theme
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Design Tokens ────────────────────────────────────────────── */
+:root {
+    --bg:           #f4f7f9;
+    --surface:      #ffffff;
+    --surface-2:    #f8fafc;
+    --surface-3:    #e2e8f0;
+
+    --accent:       #3b82f6;
+    --accent-hover: #2563eb;
+
+    --driver-color: #f59e0b;
+    --driver-glow:  rgba(245, 158, 11, 0.3);
+    --pass-color:   #10b981;
+    --pass-glow:    rgba(16, 185, 129, 0.3);
+
+    --text:         #0f172a;
+    --text-muted:   #64748b;
+    --text-dim:     #94a3b8;
+    --border:       #e2e8f0;
+    --border-hover: #cbd5e1;
+
+    --font-main:    'Poppins', sans-serif;
+
+    --seat-size:    42px;
+    --name-size:    9px;
+
+    --card-radius:  20px;
+    --shadow-card:  0 10px 30px rgba(0, 0, 0, 0.05), 0 4px 10px rgba(0, 0, 0, 0.02);
+}
+
+/* ── Reset ────────────────────────────────────────────────────── */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+    font-family: var(--font-main), serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* ── App Shell ────────────────────────────────────────────────── */
+.app {
+    position: relative;
+    z-index: 1;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 5rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HEADER
+   ═══════════════════════════════════════════════════════════════ */
+.app-header {
+    text-align: center;
+    padding: 2rem 1rem 2.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.header-tagline {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.app-title {
+    font-weight: 900;
+    font-size: clamp(1.9rem, 5.5vw, 3.2rem);
+    color: var(--text);
+    letter-spacing: -0.02em;
+    line-height: 1;
+}
+
+.title-accent {
+    color: var(--accent);
+}
+
+.header-sub {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-top: 0.2rem;
+}
+
+/* ── Randomize Button ─────────────────────────────────────────── */
+.randomize-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    padding: 0.5rem 1.2rem;
+    margin-top: 1.2rem;
+    background: var(--accent);
+    color: #ffffff;
+    border: none;
+    border-radius: 50px;
+    font-family: var(--font-main), serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition:
+            transform 0.18s cubic-bezier(.34,1.56,.64,1),
+            box-shadow 0.18s ease,
+            background 0.18s ease;
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+    user-select: none;
+}
+
+.randomize-btn:hover:not(:disabled) {
+    transform: translateY(-3px) scale(1.02);
+    background: var(--accent-hover);
+    box-shadow: 0 12px 25px rgba(59, 130, 246, 0.4);
+}
+
+.randomize-btn:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+}
+
+.randomize-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   VEHICLES GRID
+   ═══════════════════════════════════════════════════════════════ */
+.vehicles-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2.5rem;
+    transition:
+            opacity 0.32s ease,
+            transform 0.32s ease;
+}
+
+.vehicles-grid.is-randomizing {
+    opacity: 0;
+    transform: scale(0.975) translateY(6px);
+    pointer-events: none;
+}
+
+/* ── Vehicle Card ─────────────────────────────────────────────── */
+.vehicle-card {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--card-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.vehicle-card:hover {
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
+    border-color: var(--border-hover);
+}
+
+/* ── Card Header ──────────────────────────────────────────────── */
+.vehicle-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.7rem;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+}
+
+.vehicle-title-group {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+.vehicle-name {
+    font-weight: 900;
+    font-size: 1.35rem;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.vehicle-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.seat-pill {
+    background: var(--surface-3);
+    color: var(--text);
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.3rem 0.6rem;
+    border-radius: 12px;
+    display: inline-block;
+}
+
+.driver-pill {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+/* ── Car Visual + Seat Overlay ────────────────────────────────── */
+.vehicle-visual {
+    position: relative;
+    width: 100%;
+    line-height: 0;
+    background: #ffffff;
+}
+
+.car-image {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.seats-overlay {
+    position: absolute;
+    inset: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SEAT AVATAR
+   ═══════════════════════════════════════════════════════════════ */
+.seat {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    z-index: 10;
+}
+
+/* Avatar circle wrapper */
+.seat-avatar-wrap {
+    position: relative;
+    width: var(--seat-size);
+    height: var(--seat-size);
+    flex-shrink: 0;
+}
+
+.seat-avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+    border: 3px solid transparent;
+    background: var(--surface-3);
+}
+
+/* Name tag */
+.seat-name-tag {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--name-size);
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+    padding: 3px 6px 2px 6px;
+    border-radius: 6px;
+    letter-spacing: 0.02em;
+}
+
+/* ── Driver variant ───────────────────────────────────────────── */
+.seat--driver .seat-avatar-img {
+    border-color: var(--driver-color);
+    box-shadow: 0 4px 12px var(--driver-glow);
+}
+
+.seat--driver .seat-name-tag {
+    background: var(--driver-color);
+    color: #fff;
+}
+
+/* ── Passenger variant ────────────────────────────────────────── */
+.seat--passenger .seat-avatar-img {
+    border-color: var(--pass-color);
+    box-shadow: 0 4px 12px var(--pass-glow);
+}
+
+.seat--passenger .seat-name-tag {
+    background: var(--pass-color);
+    color: #fff;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════════════════════════ */
+.seat--passenger { opacity: 0; }
+.seat--driver { opacity: 1; animation: driverSettle 0.5s cubic-bezier(.34,1.56,.64,1) both; }
+
+@keyframes driverSettle {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+    to   { opacity: 1; transform: translate(-50%, -50%) scale(1);   }
+}
+
+.seat--appear {
+    animation: passengerDeal 0.45s cubic-bezier(.34,1.56,.64,1) both;
+}
+
+@keyframes passengerDeal {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4) rotate(-8deg); }
+    60%  { opacity: 1; transform: translate(-50%, -50%) scale(1.08) rotate(2deg); }
+    100% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+}
+
+.btn-dice {
+    font-size: 1.35rem;
+    display: inline-block;
+    transition: transform 0.1s;
+}
+
+.randomize-btn.btn--loading .btn-dice {
+    animation: rollDice 0.35s linear infinite;
+}
+
+@keyframes rollDice {
+    0%   { transform: rotate(0deg)   scale(1);    }
+    25%  { transform: rotate(90deg)  scale(1.15); }
+    50%  { transform: rotate(180deg) scale(0.9);  }
+    75%  { transform: rotate(270deg) scale(1.15); }
+    100% { transform: rotate(360deg) scale(1);    }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LEGEND
+   ═══════════════════════════════════════════════════════════════ */
+.legend {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 1.8rem;
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.legend-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+}
+
+.legend-dot--driver    { background: var(--driver-color); box-shadow: 0 2px 6px var(--driver-glow); }
+.legend-dot--passenger { background: var(--pass-color);   box-shadow: 0 2px 6px var(--pass-glow);   }
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 700px) {
+    :root {
+        --seat-size:   34px;
+        --name-size:   8px;
+    }
+    .app { padding: 1.5rem 1rem 4rem; }
+    .app-title { font-size: 1.7rem; }
+    .vehicles-grid { gap: 1.8rem; }
+}
+
+@media (max-width: 460px) {
+    :root {
+        --seat-size:   15px;
+        --name-size:   4px;
+    }
+
+    .app {
+        padding-top: 1rem;
+    }
+    .app-header {
+        padding: 0.5rem 1rem 1rem;
+    }
+
+    .randomize-btn {
+        font-size: 1.3rem;
+        padding: 0.5rem 1rem;
+        margin-top: 0.5rem;
+    }
+
+    .vehicle-header { padding: 0.4rem; }
+    .vehicle-name   { font-size: 1rem; }
+    .seat-pill      { font-size: 0.5rem; padding: 0.2rem 0.5rem;}
+    .driver-pill    { font-size: 0.6rem; }
+    .vehicle-meta   { gap: 0.2rem;}
+
+    .seat {
+        gap: 1px;
+    }
+    .seat-avatar-img {
+        border-width: 1px;
+    }
+    .seat-name-tag {
+        padding: 1px 3px 0.5px 3px;
+        border-radius: 3px;
+    }
+}
