@@ -84,7 +84,7 @@ function assignPassengers() {
     return VEHICLE_CONFIG.map(vehicle => {
         const count = vehicle.passengerSlots.length;
 
-        // Shuffle the drivers internally so they randomly get assigned to either the left or right front-row seat
+        // Shuffle drivers within their vehicle so either name can be in the driver seat
         const driverNames = vehicle.drivers.map(d => d.name);
         const shuffledDriverNames = shuffle(driverNames);
 
@@ -95,7 +95,7 @@ function assignPassengers() {
 
         return {
             ...vehicle,
-            assignedDrivers: assignedDrivers,
+            assignedDrivers,
             assignedPassengers: shuffled.slice(cursor, cursor += count)
         };
     });
@@ -123,8 +123,8 @@ function createSeatEl(name, isDriver, pos) {
     avatarWrap.appendChild(img);
 
     const nameTag = document.createElement('span');
-    nameTag.className    = 'seat-name-tag';
-    nameTag.textContent  = name;
+    nameTag.className   = 'seat-name-tag';
+    nameTag.textContent = name;
 
     seat.appendChild(avatarWrap);
     seat.appendChild(nameTag);
@@ -232,7 +232,7 @@ function randomize() {
     if (!btn || !grid) return;
 
     btn.disabled = true;
-    btn.classList.add('btn--loading'); // Zet de animatie AAN
+    btn.classList.add('btn--loading');
     grid.classList.add('is-randomizing');
 
     setTimeout(() => {
@@ -246,8 +246,139 @@ function randomize() {
         });
 
         btn.disabled = false;
-        btn.classList.remove('btn--loading'); // Zet de animatie UIT
+        btn.classList.remove('btn--loading');
     }, 340);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   SHARE ACTION
+   ────────────────────────────────────────────────────────────── */
+
+/**
+ * Detect whether the native Web Share API supports sharing files.
+ * True on iOS Safari and Android Chrome; false on most desktops.
+ */
+function canNativeShare() {
+    try {
+        const probe = new File([''], 'probe.png', { type: 'image/png' });
+        return !!navigator.canShare && navigator.canShare({ files: [probe] });
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Show a brief toast message below the share button.
+ * @param {string} message
+ * @param {number} [duration=2600]  — ms before toast fades out
+ */
+function showToast(message, duration = 2600) {
+    const toast = document.getElementById('shareToast');
+    if (!toast) return;
+
+    toast.textContent = message;
+    toast.classList.add('is-visible');
+
+    clearTimeout(toast._hideTimer);
+    toast._hideTimer = setTimeout(() => {
+        toast.classList.remove('is-visible');
+    }, duration);
+}
+
+/**
+ * Use html2canvas to render the full seating grid to a Blob.
+ * html2canvas walks the live DOM, so all overlaid name-tags are captured.
+ *
+ * We temporarily force every passenger seat to full opacity so the
+ * CSS `opacity: 0` initial state (used for the entrance animation)
+ * doesn't make seats invisible in the screenshot.
+ *
+ * @returns {Promise<Blob>}
+ */
+async function captureGridAsBlob() {
+    const grid = document.getElementById('vehiclesGrid');
+
+    // Make all seats fully visible for the capture
+    const hiddenSeats = grid.querySelectorAll('.seat--passenger');
+    hiddenSeats.forEach(s => s.style.opacity = '1');
+
+    let blob;
+    try {
+        const canvas = await html2canvas(grid, {
+            backgroundColor: '#f4f7f9',   // matches --bg
+            scale: 2,                      // 2× for crisp retina output
+            useCORS: true,                 // needed when images are local files served via a server
+            allowTaint: true,              // fallback for file:// protocol
+            logging: false,
+        });
+
+        blob = await new Promise(resolve =>
+            canvas.toBlob(resolve, 'image/png')
+        );
+    } finally {
+        // Restore opacity (the CSS class controls animation state)
+        hiddenSeats.forEach(s => s.style.opacity = '');
+    }
+
+    return blob;
+}
+
+/**
+ * Main share handler:
+ *   1. Capture the seating grid as a PNG blob via html2canvas
+ *   2a. Mobile  → navigator.share() with the file (shows WhatsApp, etc.)
+ *   2b. Desktop → navigator.clipboard.write() copies PNG to clipboard
+ *   2c. Fallback → trigger a file download
+ */
+async function shareSeating() {
+    const btn       = document.getElementById('shareBtn');
+    const labelEl   = document.getElementById('shareBtnLabel');
+    if (!btn) return;
+
+    // Show loading state
+    btn.disabled = true;
+    btn.classList.add('btn--loading');
+    if (labelEl) labelEl.textContent = 'Bezig…';
+
+    try {
+        const blob = await captureGridAsBlob();
+        const file = new File([blob], 'jinkamp-indeling.png', { type: 'image/png' });
+
+        if (canNativeShare()) {
+            /* ── Mobile: native share sheet ───────────────────── */
+            await navigator.share({
+                files: [file],
+                title: 'JinKamp Indeling',
+                text: 'Bekijk de zitplaatsen voor JinKamp 2026!',
+            });
+            // No toast needed — the OS share sheet is the feedback
+        } else if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
+            /* ── Desktop: copy PNG to clipboard ──────────────── */
+            await navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': blob })
+            ]);
+            showToast('Afbeelding gekopieerd naar klembord!');
+        } else {
+            /* ── Last resort: download the image ─────────────── */
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href     = url;
+            anchor.download = 'jinkamp-indeling.png';
+            anchor.click();
+            setTimeout(() => URL.revokeObjectURL(url), 10_000);
+            showToast('Afbeelding gedownload!');
+        }
+    } catch (err) {
+        // User cancelled native share — not an error worth surfacing
+        if (err.name !== 'AbortError') {
+            console.error('[JinKamp] Share failed:', err);
+            showToast('Oeps, er ging iets mis. Probeer opnieuw.');
+        }
+    } finally {
+        btn.disabled = false;
+        btn.classList.remove('btn--loading');
+        if (labelEl) labelEl.textContent = 'Deel indeling';
+    }
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -257,6 +388,14 @@ document.addEventListener('DOMContentLoaded', () => {
     insertLegend();
     renderAll(assignPassengers());
 
-    const btn = document.getElementById('randomizeBtn');
-    if (btn) btn.addEventListener('click', randomize);
+    const randomizeBtn = document.getElementById('randomizeBtn');
+    if (randomizeBtn) randomizeBtn.addEventListener('click', randomize);
+
+    // Wire up share button and set the correct icon mode
+    const shareBtn = document.getElementById('shareBtn');
+    if (shareBtn) {
+        // Add the right icon class so CSS can show the matching SVG
+        shareBtn.classList.add(canNativeShare() ? 'share-btn--native' : 'share-btn--clipboard');
+        shareBtn.addEventListener('click', shareSeating);
+    }
 });

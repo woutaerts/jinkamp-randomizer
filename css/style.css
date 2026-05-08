@@ -137,6 +137,24 @@ body {
     cursor: not-allowed;
 }
 
+.btn-dice {
+    font-size: 1.35rem;
+    display: inline-block;
+    transition: transform 0.1s;
+}
+
+.randomize-btn.btn--loading .btn-dice {
+    animation: rollDice 0.35s linear infinite;
+}
+
+@keyframes rollDice {
+    0%   { transform: rotate(0deg)   scale(1);    }
+    25%  { transform: rotate(90deg)  scale(1.15); }
+    50%  { transform: rotate(180deg) scale(0.9);  }
+    75%  { transform: rotate(270deg) scale(1.15); }
+    100% { transform: rotate(360deg) scale(1);    }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    VEHICLES GRID
    ═══════════════════════════════════════════════════════════════ */
@@ -253,7 +271,6 @@ body {
     z-index: 10;
 }
 
-/* Avatar circle wrapper */
 .seat-avatar-wrap {
     position: relative;
     width: var(--seat-size);
@@ -271,7 +288,6 @@ body {
     background: var(--surface-3);
 }
 
-/* Name tag */
 .seat-name-tag {
     display: flex;
     align-items: center;
@@ -328,24 +344,6 @@ body {
     100% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
 }
 
-.btn-dice {
-    font-size: 1.35rem;
-    display: inline-block;
-    transition: transform 0.1s;
-}
-
-.randomize-btn.btn--loading .btn-dice {
-    animation: rollDice 0.35s linear infinite;
-}
-
-@keyframes rollDice {
-    0%   { transform: rotate(0deg)   scale(1);    }
-    25%  { transform: rotate(90deg)  scale(1.15); }
-    50%  { transform: rotate(180deg) scale(0.9);  }
-    75%  { transform: rotate(270deg) scale(1.15); }
-    100% { transform: rotate(360deg) scale(1);    }
-}
-
 /* ═══════════════════════════════════════════════════════════════
    LEGEND
    ═══════════════════════════════════════════════════════════════ */
@@ -375,6 +373,116 @@ body {
 
 .legend-dot--driver    { background: var(--driver-color); box-shadow: 0 2px 6px var(--driver-glow); }
 .legend-dot--passenger { background: var(--pass-color);   box-shadow: 0 2px 6px var(--pass-glow);   }
+
+/* ═══════════════════════════════════════════════════════════════
+   SHARE ROW
+   ═══════════════════════════════════════════════════════════════ */
+.share-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 2.5rem;
+}
+
+/* Share button — mirrors the randomize button style */
+.share-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.2rem;
+    background: var(--surface);
+    color: var(--accent);
+    border: 2px solid var(--accent);
+    border-radius: 50px;
+    font-family: var(--font-main), serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition:
+            transform 0.18s cubic-bezier(.34,1.56,.64,1),
+            box-shadow 0.18s ease,
+            background 0.18s ease,
+            color 0.18s ease;
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.12);
+    user-select: none;
+}
+
+.share-btn:hover:not(:disabled) {
+    transform: translateY(-3px) scale(1.02);
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 10px 22px rgba(59, 130, 246, 0.35);
+}
+
+.share-btn:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+}
+
+.share-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* SVG icons inside the share button */
+.share-icon,
+.icon {
+    width: 1.1em;
+    height: 1.1em;
+    flex-shrink: 0;
+    vertical-align: middle;
+}
+
+/* Show/hide the correct icon based on the mode class set by JS */
+.icon--share { display: none; }
+.icon--copy  { display: none; }
+
+.share-btn--native .icon--share { display: block; }
+.share-btn--native .icon--copy  { display: none;  }
+
+.share-btn--clipboard .icon--share { display: none;  }
+.share-btn--clipboard .icon--copy  { display: block; }
+
+/* Loading spinner — replaces icons while html2canvas is running */
+.share-btn.btn--loading .icon--share,
+.share-btn.btn--loading .icon--copy {
+    display: none;
+}
+
+.share-btn.btn--loading::before {
+    content: '';
+    display: block;
+    width: 1.1em;
+    height: 1.1em;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spinShare 0.7s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes spinShare {
+    to { transform: rotate(360deg); }
+}
+
+/* ── Toast notification ───────────────────────────────────────── */
+.share-toast {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    min-height: 1.2em;          /* prevent layout shift when empty */
+    text-align: center;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.share-toast.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
 
 /* ═══════════════════════════════════════════════════════════════
    RESPONSIVE
@@ -410,9 +518,9 @@ body {
 
     .vehicle-header { padding: 0.4rem; }
     .vehicle-name   { font-size: 1rem; }
-    .seat-pill      { font-size: 0.5rem; padding: 0.2rem 0.5rem;}
+    .seat-pill      { font-size: 0.5rem; padding: 0.2rem 0.5rem; }
     .driver-pill    { font-size: 0.6rem; }
-    .vehicle-meta   { gap: 0.2rem;}
+    .vehicle-meta   { gap: 0.2rem; }
 
     .seat {
         gap: 1px;
