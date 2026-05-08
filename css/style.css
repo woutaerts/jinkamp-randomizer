@@ -12,10 +12,10 @@
     --accent:       #3b82f6;
     --accent-hover: #2563eb;
 
-    --driver-color: #f59e0b;
-    --driver-glow:  rgba(245, 158, 11, 0.3);
-    --pass-color:   #10b981;
-    --pass-glow:    rgba(16, 185, 129, 0.3);
+    --driver-color: #f87575;
+    --driver-glow:  rgba(248, 117, 117, 0.3);
+    --pass-color:   #157145;
+    --pass-glow:    rgba(21, 113, 69, 0.3);
 
     --text:         #0f172a;
     --text-muted:   #64748b;
