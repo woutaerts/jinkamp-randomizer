@@ -151,7 +151,6 @@ function createVehicleCard(vehicleData) {
     const meta = document.createElement('div');
     meta.className = 'vehicle-meta';
     meta.innerHTML = `
-        <span class="seat-pill">${totalSeats} stoelen</span>
         <span class="driver-pill">Chauffeurs: ${assignedDrivers.map(d => d.name).join(' & ')}</span>
     `;
 
@@ -298,9 +297,20 @@ function showToast(message, duration = 2600) {
 async function captureGridAsBlob() {
     const grid = document.getElementById('vehiclesGrid');
 
-    // Make all seats fully visible for the capture
-    const hiddenSeats = grid.querySelectorAll('.seat--passenger');
-    hiddenSeats.forEach(s => s.style.opacity = '1');
+    // 1. Selecteer álle stoelen (zowel chauffeurs als passagiers)
+    const allSeats = grid.querySelectorAll('.seat');
+
+    // 2. Zet animaties tijdelijk uit en forceer volledige zichtbaarheid.
+    // Omdat de CSS '.seat' class al 'transform: translate(-50%, -50%)' heeft,
+    // snappen ze door 'animation: none' perfect naar hun eindpositie.
+    allSeats.forEach(s => {
+        s.style.animation = 'none';
+        s.style.opacity = '1';
+    });
+
+    // 3. Wacht een fractie van een seconde (150ms) zodat de browser deze nieuwe,
+    // stilstaande frames daadwerkelijk op het scherm tekent voordat de foto wordt genomen.
+    await new Promise(resolve => setTimeout(resolve, 150));
 
     let blob;
     try {
@@ -316,8 +326,12 @@ async function captureGridAsBlob() {
             canvas.toBlob(resolve, 'image/png')
         );
     } finally {
-        // Restore opacity (the CSS class controls animation state)
-        hiddenSeats.forEach(s => s.style.opacity = '');
+        // 4. Herstel de originele styling (verwijdert de inline styles) zodat
+        // de css-animaties bij een volgende klik op 'Randomize' gewoon weer werken.
+        allSeats.forEach(s => {
+            s.style.animation = '';
+            s.style.opacity = '';
+        });
     }
 
     return blob;
@@ -382,19 +396,49 @@ async function shareSeating() {
 }
 
 /* ──────────────────────────────────────────────────────────────
-   INIT
+   INIT & PRELOADER
    ────────────────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
     insertLegend();
-    renderAll(assignPassengers());
 
+    const grid = document.getElementById('vehiclesGrid');
+
+    // 1. Verzamel alle afbeeldingen die we willen inladen
+    const imagesToPreload = VEHICLE_CONFIG.map(v => v.image);
+    imagesToPreload.push('img/persons/default.png'); // Voeg ook de avatar toe
+
+    let loadedCount = 0;
+
+    // 2. Laad ze één voor één in het geheugen
+    imagesToPreload.forEach(src => {
+        const img = new Image();
+        img.src = src;
+
+        // Zodra een afbeelding geladen is (of faalt), tel er eentje op
+        img.onload = img.onerror = () => {
+            loadedCount++;
+
+            // Als alle afbeeldingen binnen zijn...
+            if (loadedCount === imagesToPreload.length) {
+                // ...bouw dan de indeling
+                renderAll(assignPassengers());
+
+                // ...en verwijder de verberg-klasse zodat alles mooi in-fadet
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        grid.classList.remove('is-randomizing');
+                    });
+                });
+            }
+        };
+    });
+
+    // 3. Koppel de knoppen
     const randomizeBtn = document.getElementById('randomizeBtn');
     if (randomizeBtn) randomizeBtn.addEventListener('click', randomize);
 
-    // Wire up share button and set the correct icon mode
     const shareBtn = document.getElementById('shareBtn');
     if (shareBtn) {
-        // Add the right icon class so CSS can show the matching SVG
         shareBtn.classList.add(canNativeShare() ? 'share-btn--native' : 'share-btn--clipboard');
         shareBtn.addEventListener('click', shareSeating);
     }
