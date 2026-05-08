@@ -150,9 +150,6 @@ function createVehicleCard(vehicleData) {
 
     const meta = document.createElement('div');
     meta.className = 'vehicle-meta';
-    meta.innerHTML = `
-        <span class="driver-pill">Chauffeurs: ${assignedDrivers.map(d => d.name).join(' & ')}</span>
-    `;
 
     header.appendChild(titleGroup);
     header.appendChild(meta);
@@ -351,15 +348,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (loadedCount === imagesToPreload.length) {
 
-                // KIJK OF ER EEN LINK WERD GEDEELD
+                // 1. Kijk of er een indeling in de link staat
                 const savedAssignments = loadFromUrl();
 
                 if (savedAssignments) {
-                    renderAll(savedAssignments); // Toon de gedeelde indeling
+                    // Er is een gedeelde link geopend: toon deze
+                    renderAll(savedAssignments);
                 } else {
-                    renderAll(assignPassengers()); // Anders gewoon een nieuwe randomisatie
+                    // GEEN indeling in link: voer een automatische randomisatie uit
+                    const initialAssignments = assignPassengers();
+                    renderAll(initialAssignments);
+                    saveToUrl(initialAssignments); // DIT zorgt dat de URL direct gevuld wordt!
                 }
 
+                // Maak de grid zichtbaar
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                         grid.classList.remove('is-randomizing');
