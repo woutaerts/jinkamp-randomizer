@@ -86,15 +86,42 @@ body {
     line-height: 1;
 }
 
-.title-accent {
-    color: var(--accent);
+.subtitle-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: min-content;
+    margin-top: 1rem;
 }
 
-.header-sub {
-    font-size: 0.95rem;
+.app-subtitle {
+    font-size: clamp(1rem, 2.5vw, 2rem);
+    font-weight: 700;
     color: var(--text-muted);
-    font-weight: 500;
-    margin-top: 0.2rem;
+    letter-spacing: -0.02em;
+    margin: 0;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.accent-dash {
+    color: var(--accent);
+    margin: 0 0.4rem;
+    font-weight: 900;
+}
+
+.countries-img {
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    display: block;
+    margin-top: 0.4rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+}
+
+.title-accent {
+    color: var(--accent);
 }
 
 /* ── Randomize Button ─────────────────────────────────────────── */
@@ -508,6 +535,14 @@ body {
     }
     .app-header {
         padding: 0.5rem 1rem 1rem;
+    }
+
+    .subtitle-container{
+        margin-top: 0.5rem;
+    }
+
+    .countries-img {
+        margin-bottom: 0.5rem;
     }
 
     .randomize-btn {
