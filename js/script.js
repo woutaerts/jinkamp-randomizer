@@ -222,6 +222,33 @@ function insertLegend() {
 }
 
 /* ──────────────────────────────────────────────────────────────
+   URL STATE MANAGEMENT (Save & Load van URL)
+   ────────────────────────────────────────────────────────────── */
+
+// Zet de assignments om naar een veilige string voor in de URL
+function saveToUrl(assignments) {
+    const jsonStr = JSON.stringify(assignments);
+    const base64 = btoa(encodeURIComponent(jsonStr)); // Codeer naar base64
+    window.location.hash = `indeling=${base64}`;      // Plak het achter de # in de url
+}
+
+// Lees de URL uit en kijk of er een opgeslagen indeling in zit
+function loadFromUrl() {
+    const hash = window.location.hash;
+    if (hash && hash.startsWith('#indeling=')) {
+        try {
+            const base64 = hash.replace('#indeling=', '');
+            const jsonStr = decodeURIComponent(atob(base64));
+            return JSON.parse(jsonStr);
+        } catch (e) {
+            console.error("Kon de gedeelde link niet lezen", e);
+            return null; // Als de link stuk is, return niks
+        }
+    }
+    return null;
+}
+
+/* ──────────────────────────────────────────────────────────────
    RANDOMISE ACTION
    ────────────────────────────────────────────────────────────── */
 
@@ -236,6 +263,10 @@ function randomize() {
 
     setTimeout(() => {
         const assignments = assignPassengers();
+
+        // SLA OP IN URL
+        saveToUrl(assignments);
+
         renderAll(assignments);
 
         requestAnimationFrame(() => {
@@ -250,27 +281,13 @@ function randomize() {
 }
 
 /* ──────────────────────────────────────────────────────────────
-   SHARE ACTION
+   SHARE ACTION (Link Delen ipv Afbeelding)
    ────────────────────────────────────────────────────────────── */
 
-/**
- * Detect whether the native Web Share API supports sharing files.
- * True on iOS Safari and Android Chrome; false on most desktops.
- */
 function canNativeShare() {
-    try {
-        const probe = new File([''], 'probe.png', { type: 'image/png' });
-        return !!navigator.canShare && navigator.canShare({ files: [probe] });
-    } catch {
-        return false;
-    }
+    return !!navigator.share; // Simpele check of de browser een deelfunctie heeft
 }
 
-/**
- * Show a brief toast message below the share button.
- * @param {string} message
- * @param {number} [duration=2600]  — ms before toast fades out
- */
 function showToast(message, duration = 2600) {
     const toast = document.getElementById('shareToast');
     if (!toast) return;
@@ -284,114 +301,32 @@ function showToast(message, duration = 2600) {
     }, duration);
 }
 
-/**
- * Use html2canvas to render the full seating grid to a Blob.
- * html2canvas walks the live DOM, so all overlaid name-tags are captured.
- *
- * We temporarily force every passenger seat to full opacity so the
- * CSS `opacity: 0` initial state (used for the entrance animation)
- * doesn't make seats invisible in the screenshot.
- *
- * @returns {Promise<Blob>}
- */
-async function captureGridAsBlob() {
-    const grid = document.getElementById('vehiclesGrid');
-
-    // 1. Selecteer álle stoelen (zowel chauffeurs als passagiers)
-    const allSeats = grid.querySelectorAll('.seat');
-
-    // 2. Zet animaties tijdelijk uit en forceer volledige zichtbaarheid.
-    // Omdat de CSS '.seat' class al 'transform: translate(-50%, -50%)' heeft,
-    // snappen ze door 'animation: none' perfect naar hun eindpositie.
-    allSeats.forEach(s => {
-        s.style.animation = 'none';
-        s.style.opacity = '1';
-    });
-
-    // 3. Wacht een fractie van een seconde (150ms) zodat de browser deze nieuwe,
-    // stilstaande frames daadwerkelijk op het scherm tekent voordat de foto wordt genomen.
-    await new Promise(resolve => setTimeout(resolve, 150));
-
-    let blob;
-    try {
-        const canvas = await html2canvas(grid, {
-            backgroundColor: '#f4f7f9',   // matches --bg
-            scale: 2,                      // 2× for crisp retina output
-            useCORS: true,                 // needed when images are local files served via a server
-            allowTaint: true,              // fallback for file:// protocol
-            logging: false,
-        });
-
-        blob = await new Promise(resolve =>
-            canvas.toBlob(resolve, 'image/png')
-        );
-    } finally {
-        // 4. Herstel de originele styling (verwijdert de inline styles) zodat
-        // de css-animaties bij een volgende klik op 'Randomize' gewoon weer werken.
-        allSeats.forEach(s => {
-            s.style.animation = '';
-            s.style.opacity = '';
-        });
-    }
-
-    return blob;
-}
-
-/**
- * Main share handler:
- *   1. Capture the seating grid as a PNG blob via html2canvas
- *   2a. Mobile  → navigator.share() with the file (shows WhatsApp, etc.)
- *   2b. Desktop → navigator.clipboard.write() copies PNG to clipboard
- *   2c. Fallback → trigger a file download
- */
 async function shareSeating() {
     const btn       = document.getElementById('shareBtn');
-    const labelEl   = document.getElementById('shareBtnLabel');
     if (!btn) return;
 
-    // Show loading state
-    btn.disabled = true;
-    btn.classList.add('btn--loading');
-    if (labelEl) labelEl.textContent = 'Bezig…';
+    // De URL pakken (inclusief de #indeling code)
+    const shareUrl = window.location.href;
 
     try {
-        const blob = await captureGridAsBlob();
-        const file = new File([blob], 'jinkamp-indeling.png', { type: 'image/png' });
-
         if (canNativeShare()) {
-            /* ── Mobile: native share sheet ───────────────────── */
+            /* ── Mobile: native share sheet (Opent Whatsapp direct) ── */
             await navigator.share({
-                files: [file],
-                title: 'JinKamp Indeling',
-                text: 'Bekijk de zitplaatsen voor JinKamp 2026!',
+                title: 'JinKamp Indeling 2026',
+                text: 'Hier is de indeling voor de auto\'s!',
+                url: shareUrl,
             });
-            // No toast needed — the OS share sheet is the feedback
-        } else if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
-            /* ── Desktop: copy PNG to clipboard ──────────────── */
-            await navigator.clipboard.write([
-                new ClipboardItem({ 'image/png': blob })
-            ]);
-            showToast('Afbeelding gekopieerd naar klembord!');
         } else {
-            /* ── Last resort: download the image ─────────────── */
-            const url = URL.createObjectURL(blob);
-            const anchor = document.createElement('a');
-            anchor.href     = url;
-            anchor.download = 'jinkamp-indeling.png';
-            anchor.click();
-            setTimeout(() => URL.revokeObjectURL(url), 10_000);
-            showToast('Afbeelding gedownload!');
+            await navigator.clipboard.writeText(shareUrl);
+            showToast('Link gekopieerd! Plak hem in Whatsapp/Messenger.');
         }
     } catch (err) {
-        // User cancelled native share — not an error worth surfacing
         if (err.name !== 'AbortError') {
             console.error('[JinKamp] Share failed:', err);
-            showToast('Oeps, er ging iets mis. Probeer opnieuw.');
+            // Fallback als het faalt
+            await navigator.clipboard.writeText(shareUrl);
+            showToast('Link gekopieerd!');
         }
-    } finally {
-        btn.disabled = false;
-        btn.classList.remove('btn--loading');
-        if (labelEl) labelEl.textContent = 'Deel indeling';
     }
 }
 
@@ -402,28 +337,29 @@ document.addEventListener('DOMContentLoaded', () => {
     insertLegend();
 
     const grid = document.getElementById('vehiclesGrid');
-
-    // 1. Verzamel alle afbeeldingen die we willen inladen
     const imagesToPreload = VEHICLE_CONFIG.map(v => v.image);
-    imagesToPreload.push('img/persons/default.png'); // Voeg ook de avatar toe
+    imagesToPreload.push('img/persons/default.png');
 
     let loadedCount = 0;
 
-    // 2. Laad ze één voor één in het geheugen
     imagesToPreload.forEach(src => {
         const img = new Image();
         img.src = src;
 
-        // Zodra een afbeelding geladen is (of faalt), tel er eentje op
         img.onload = img.onerror = () => {
             loadedCount++;
 
-            // Als alle afbeeldingen binnen zijn...
             if (loadedCount === imagesToPreload.length) {
-                // ...bouw dan de indeling
-                renderAll(assignPassengers());
 
-                // ...en verwijder de verberg-klasse zodat alles mooi in-fadet
+                // KIJK OF ER EEN LINK WERD GEDEELD
+                const savedAssignments = loadFromUrl();
+
+                if (savedAssignments) {
+                    renderAll(savedAssignments); // Toon de gedeelde indeling
+                } else {
+                    renderAll(assignPassengers()); // Anders gewoon een nieuwe randomisatie
+                }
+
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                         grid.classList.remove('is-randomizing');
@@ -433,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     });
 
-    // 3. Koppel de knoppen
+    // Koppel de knoppen
     const randomizeBtn = document.getElementById('randomizeBtn');
     if (randomizeBtn) randomizeBtn.addEventListener('click', randomize);
 
