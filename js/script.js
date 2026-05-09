@@ -1,5 +1,7 @@
 'use strict';
 
+const SHOW_AVATARS = false;
+
 /* ──────────────────────────────────────────────────────────────
    DATA  —  vehicles & people
    ────────────────────────────────────────────────────────────── */
@@ -112,22 +114,30 @@ function createSeatEl(name, isDriver, pos) {
     seat.style.top  = pos.top;
     seat.title = name;
 
-    const avatarWrap = document.createElement('div');
-    avatarWrap.className = 'seat-avatar-wrap';
+    // Voeg een modifier class toe als we GEEN avatars gebruiken
+    if (!SHOW_AVATARS) {
+        seat.classList.add('seat--text-only');
+    }
 
-    const img = document.createElement('img');
-    img.className = 'seat-avatar-img';
-    img.src       = 'img/persons/default.png';
-    img.alt       = name;
-    img.draggable = false;
-    avatarWrap.appendChild(img);
+    // Bouw de avatar alleen op als SHOW_AVATARS true is
+    if (SHOW_AVATARS) {
+        const avatarWrap = document.createElement('div');
+        avatarWrap.className = 'seat-avatar-wrap';
+
+        const img = document.createElement('img');
+        img.className = 'seat-avatar-img';
+        img.src       = 'img/persons/default.png';
+        img.alt       = name;
+        img.draggable = false;
+        avatarWrap.appendChild(img);
+        seat.appendChild(avatarWrap);
+    }
 
     const nameTag = document.createElement('span');
     nameTag.className   = 'seat-name-tag';
     nameTag.textContent = name;
-
-    seat.appendChild(avatarWrap);
     seat.appendChild(nameTag);
+
     return seat;
 }
 
@@ -335,7 +345,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const grid = document.getElementById('vehiclesGrid');
     const imagesToPreload = VEHICLE_CONFIG.map(v => v.image);
-    imagesToPreload.push('img/persons/default.png');
+    if (SHOW_AVATARS) {
+        imagesToPreload.push('img/persons/default.png');
+    }
 
     let loadedCount = 0;
 

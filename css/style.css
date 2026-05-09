@@ -350,6 +350,20 @@ body {
     color: #fff;
 }
 
+.seat--text-only .seat-name-tag {
+    font-size: 18px;
+    padding: 6px 12px;
+    border-radius: 12px;
+    border: 2px solid var(--surface);
+}
+
+.seat--text-only.seat--driver .seat-name-tag {
+    box-shadow: 0 4px 12px var(--driver-glow);
+}
+.seat--text-only.seat--passenger .seat-name-tag {
+    box-shadow: 0 4px 12px var(--pass-glow);
+}
+
 /* ═══════════════════════════════════════════════════════════════
    ANIMATIONS
    ═══════════════════════════════════════════════════════════════ */
@@ -522,6 +536,12 @@ body {
     .app { padding: 1.5rem 1rem 4rem; }
     .app-title { font-size: 1.7rem; }
     .vehicles-grid { gap: 1.8rem; }
+
+    .seat--text-only .seat-name-tag {
+        font-size: 11px;
+        padding: 4px 8px;
+        border-radius: 8px;
+    }
 }
 
 @media (max-width: 460px) {
@@ -566,5 +586,12 @@ body {
     .seat-name-tag {
         padding: 1px 3px 0.5px 3px;
         border-radius: 3px;
+    }
+
+    .seat--text-only .seat-name-tag {
+        font-size: 7px;
+        padding: 2px 5px;
+        border-radius: 4px;
+        border-width: 1px;
     }
 }
