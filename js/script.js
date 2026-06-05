@@ -54,14 +54,13 @@ const VEHICLE_CONFIG = [
         ],
         passengerSlots: [
             { left: '66%', top: '33%' },
-            { left: '66%', top: '51%' },
             { left: '66%', top: '68%' },
         ]
     }
 ];
 
 const PASSENGERS = [
-    'Zias', 'Lowie', 'Stig', 'Roeland', 'Simen',
+    'Zias', 'Stig', 'Roeland', 'Simen',
     'Daan', 'Len', 'Matt', 'Huug', 'Lene',
     'Lien', 'Liene', 'Lies', 'Zita', 'Kaat'
 ];
