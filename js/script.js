@@ -60,7 +60,7 @@ const VEHICLE_CONFIG = [
 ];
 
 const PASSENGERS = [
-    'Zias', 'Stig', 'Roeland', 'Simen',
+    'Zias', 'Stig', 'Roeland',
     'Daan', 'Len', 'Matt', 'Huug', 'Lene',
     'Lien', 'Liene', 'Lies', 'Zita', 'Kaat'
 ];
@@ -79,28 +79,52 @@ function shuffle(array) {
 }
 
 function assignPassengers() {
+    // Wissel af welke minibus de lege plek krijgt
+    emptySeatInSprinter = !emptySeatInSprinter;
+
     const shuffled = shuffle(PASSENGERS);
     let cursor = 0;
 
     return VEHICLE_CONFIG.map(vehicle => {
-        const count = vehicle.passengerSlots.length;
+        const slotsCount = vehicle.passengerSlots.length;
+        let passengersToTake = slotsCount;
+        let hasEmptySeat = false;
 
-        // Shuffle drivers within their vehicle so either name can be in the driver seat
+        // Bepaal welk busje één passagier minder hoeft mee te nemen
+        if (vehicle.id === 'sprinter' && emptySeatInSprinter) {
+            passengersToTake--;
+            hasEmptySeat = true;
+        } else if (vehicle.id === 'primastar' && !emptySeatInSprinter) {
+            passengersToTake--;
+            hasEmptySeat = true;
+        }
+
+        // Chauffeurs shuffelen
         const driverNames = vehicle.drivers.map(d => d.name);
         const shuffledDriverNames = shuffle(driverNames);
-
         const assignedDrivers = vehicle.drivers.map((posObj, index) => ({
             name: shuffledDriverNames[index],
             pos: posObj.pos
         }));
 
+        // Selecteer het juiste aantal passagiers voor dit specifieke voertuig
+        let passengersForVehicle = shuffled.slice(cursor, cursor + passengersToTake);
+        cursor += passengersToTake;
+
+        // Als dit voertuig een lege stoel heeft, voeg 'null' toe op de middelste plek achterin (index 4)
+        if (hasEmptySeat) {
+            passengersForVehicle.splice(4, 0, null);
+        }
+
         return {
             ...vehicle,
             assignedDrivers,
-            assignedPassengers: shuffled.slice(cursor, cursor += count)
+            assignedPassengers: passengersForVehicle
         };
     });
 }
+
+let emptySeatInSprinter = false;
 
 /* ──────────────────────────────────────────────────────────────
    DOM BUILDERS
@@ -180,8 +204,11 @@ function createVehicleCard(vehicleData) {
     });
 
     passengerSlots.forEach((pos, i) => {
-        const passengerName = assignedPassengers[i] ?? '—';
-        overlay.appendChild(createSeatEl(passengerName, false, pos));
+        const passengerName = assignedPassengers[i];
+        // Enkel een stoel tekenen als de plek bezet is (dus niet 'null')
+        if (passengerName) {
+            overlay.appendChild(createSeatEl(passengerName, false, pos));
+        }
     });
 
     visual.appendChild(carImg);
