@@ -9,7 +9,7 @@ const SHOW_AVATARS = false;
 const VEHICLE_CONFIG = [
     {
         id:         'sprinter',
-        name:       'Mercedes Sprinter XXL',
+        name:       'Battle bus',
         image:      'img/cars/sprinter.png',
         totalSeats: 8,
         drivers: [
@@ -27,7 +27,7 @@ const VEHICLE_CONFIG = [
     },
     {
         id:         'primastar',
-        name:       'Nissan Primastar',
+        name:       'Yin-Yang bus',
         image:      'img/cars/primastar.png',
         totalSeats: 8,
         drivers: [
@@ -45,7 +45,7 @@ const VEHICLE_CONFIG = [
     },
     {
         id:         'peugeot5008',
-        name:       'Peugeot 5008',
+        name:       'Black Falcon',
         image:      'img/cars/5008.png',
         totalSeats: 5,
         drivers: [
